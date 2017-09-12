@@ -11778,6 +11778,28 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="Momentum">Momentum<a class="anchor-link" href="#Momentum">&#182;</a></h1><p>"Momentum" is a phenomenon oberved across a diverse range of assets, where the assets that previously went up in price will continue to do so. It is an extremely broad idea as well - implementations can take various forms, a few examples of which are given below:</p>
+<ul>
+<li>trend trading on a single name</li>
+<li>momentum as one factor within a bigger factor model</li>
+<li>cross-sectional trading using momentum to rank</li>
+</ul>
+<p>Let's say we want to determine if the concept of momentum can give us a statistically-justified trading strategy. There are a few of steps that we have to do, to go from the broad abstract concept of "momentum" to a usable strategy:</p>
+<ol>
+<li>pick a universe to trade on</li>
+<li>pick a type of trade<ol>
+<li>time series vs. cross-sectional</li>
+</ol>
+</li>
+<li>determine how we measure momentum<ol>
+<li>define the timeframe</li>
+</ol>
+</li>
+<li>get the data</li>
+<li>check if <em>our definition</em> of momentum (determined in step 1) has a statistical edge </li>
+<li>if yes to 5, then write a backtest, check risk stats, and correlate to our other strategies</li>
+</ol>
+<p>Let's begin. I'll use a universe of the S&amp;P over the past 20y, for ease of data collection.</p>
 <h6 id="Getting-Data">Getting Data<a class="anchor-link" href="#Getting-Data">&#182;</a></h6><p>I want to create a specific data format for this project: a CSV file with dates as rows and tickers as columns, with the corresponding prices as the values.<br>
 Then, we can use different CSVs to examine different universes. Pandas is great as it handles all the NAs for us, so we don't have to build any missing-value handlers.</p>
 
@@ -11786,13 +11808,15 @@ Then, we can use different CSVs to examine different universes. Pandas is great 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[3]:</div>
+<div class="prompt input_prompt">In&nbsp;[2]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="n">price_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;20yr S&amp;P Data.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">parse_dates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># calculate returns from prices</span>
 <span class="n">returns_data</span> <span class="o">=</span> <span class="n">price_data</span><span class="o">.</span><span class="n">diff</span><span class="p">()</span> <span class="o">/</span> <span class="n">price_data</span><span class="o">.</span><span class="n">shift</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
 </pre></div>
 
@@ -11813,7 +11837,8 @@ Then, we can use different CSVs to examine different universes. Pandas is great 
 <li>forward returns function  </li>
 </ul>
 <p>Then, we can regress future returns on past momentum and see if momentum has any predictive power.</p>
-<p>My choice of a metric to measure momentum involves another regression. Here, I regress the stock's returns on a fake "perfect momentum" stream of returns (a bunch of 1% gains) and check the R^2. If the R^2 is .9, for example, then the stock's returns are 90% explained by a constant 1% gain every day.</p>
+<p>In the prevailing literature on momentum, the academics use an annoyingly simple measure of momentum - the return over the past 12m. Here, I try to use a different measure, which accounts for volatility (smoothness) of the return series as well.</p>
+<p>My choice of a metric to measure momentum involves another regression. Here, I regress the stock's returns on a fake "perfect momentum" stream of returns (a bunch of 1% gains) and check the R^2. If the R^2 is .9, for example, then the stock's returns are 90% explained by a constant 1% gain every day. In addition, the actual value of 1% doesn't matter here - in our definition, "perfect momentum" should be a <em>constant</em> positive return (e.g. you can lever up whatever</p>
 <p>We can sort all the stocks on this momentum score, because the highest R^2 values indicate the stocks who differ the least from our "perfect momentum stock".</p>
 
 </div>
@@ -11821,24 +11846,36 @@ Then, we can use different CSVs to examine different universes. Pandas is great 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[4]:</div>
+<div class="prompt input_prompt">In&nbsp;[3]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">sklearn</span> <span class="k">import</span> <span class="n">linear_model</span>
 
-<span class="k">def</span> <span class="nf">cumulate</span><span class="p">(</span><span class="n">series</span><span class="p">):</span>
+<span class="k">def</span> <span class="nf">cumulate</span><span class="p">(</span><span class="n">series</span><span class="p">):</span> 
     <span class="n">series</span> <span class="o">=</span> <span class="n">series</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">cumprod</span><span class="p">()</span>
 
 <span class="k">def</span> <span class="nf">momentum_score</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="n">lookback</span><span class="p">):</span>
+    
+    <span class="c1"># get the index of the date arg</span>
     <span class="n">date_index</span> <span class="o">=</span> <span class="n">returns_data</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+    
+    <span class="c1"># get cumulative returns as a series</span>
     <span class="n">returns_series</span> <span class="o">=</span> <span class="n">cumulate</span><span class="p">(</span><span class="n">returns_data</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[(</span><span class="n">date_index</span> <span class="o">-</span> <span class="n">lookback</span><span class="p">):</span><span class="n">date_index</span><span class="p">])</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+    
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">returns_series</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="s2">&quot;na&quot;</span><span class="p">;</span>
+    
     <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">returns_series</span><span class="p">)</span>
-    <span class="n">perfect_returns</span> <span class="o">=</span> <span class="n">cumulate</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">/</span><span class="mi">10000</span><span class="p">))</span> <span class="c1"># array of 1bp returns</span>
+    
+    <span class="c1"># make an array of 1bp returns</span>
+    <span class="n">perfect_returns</span> <span class="o">=</span> <span class="n">cumulate</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">n</span><span class="p">)</span><span class="o">/</span><span class="mi">10000</span><span class="p">))</span> 
+    
+    <span class="c1"># fit reg, predictor = perfect returns, response = stock returns</span>
     <span class="n">regr</span> <span class="o">=</span> <span class="n">linear_model</span><span class="o">.</span><span class="n">LinearRegression</span><span class="p">()</span>
     <span class="n">regr</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">perfect_returns</span><span class="p">,</span> <span class="n">returns_series</span><span class="p">)</span>
+    
+    <span class="c1"># return signed R^2 value</span>
     <span class="k">return</span> <span class="n">regr</span><span class="o">.</span><span class="n">score</span><span class="p">(</span><span class="n">perfect_returns</span><span class="p">,</span> <span class="n">returns_series</span><span class="p">)</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">regr</span><span class="o">.</span><span class="n">coef_</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
 </pre></div>
 
@@ -11859,7 +11896,7 @@ Then, we can use different CSVs to examine different universes. Pandas is great 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[5]:</div>
+<div class="prompt input_prompt">In&nbsp;[4]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">forward_return</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">date</span><span class="p">,</span> <span class="n">lookforward</span><span class="p">,</span> <span class="n">df</span> <span class="o">=</span> <span class="n">price_data</span><span class="p">):</span> <span class="c1"># added a df argument so that we can use SPY_data later</span>
@@ -11894,29 +11931,36 @@ Then, we can use different CSVs to examine different universes. Pandas is great 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[6]:</div>
+<div class="prompt input_prompt">In&nbsp;[5]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="k">def</span> <span class="nf">hypothesis_testing_dataframe</span><span class="p">(</span><span class="n">lookback</span><span class="p">,</span> <span class="n">lookforward</span><span class="p">,</span> <span class="o">*</span><span class="n">datearg</span><span class="p">):</span>
     <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
     <span class="n">SPY</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">()</span>
     <span class="n">tickers</span> <span class="o">=</span> <span class="n">price_data</span><span class="o">.</span><span class="n">columns</span>
+    
+    <span class="c1">#  if no date(s) given, use a random date</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">datearg</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">sample_dates</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">price_data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">lookback</span><span class="p">:(</span><span class="nb">len</span><span class="p">(</span><span class="n">price_data</span><span class="p">)</span><span class="o">-</span><span class="n">lookforward</span><span class="p">)]</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">sample_dates</span> <span class="o">=</span> <span class="n">datearg</span>
+    
     <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span>
     <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">sample_dates</span><span class="p">:</span>
-        <span class="c1"># print(d.strftime(&quot;%m-%d-%Y&quot;))</span>
         <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">tickers</span><span class="p">:</span>
+            
             <span class="n">score</span> <span class="o">=</span> <span class="n">momentum_score</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">lookback</span><span class="p">)</span>
             <span class="n">response</span> <span class="o">=</span> <span class="n">forward_return</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">lookforward</span><span class="p">)</span>
             <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+                
+                <span class="c1"># record the calculations in df</span>
             <span class="k">if</span> <span class="n">score</span> <span class="o">!=</span> <span class="s2">&quot;na&quot;</span> <span class="ow">and</span> <span class="n">response</span> <span class="o">!=</span> <span class="s2">&quot;na&quot;</span><span class="p">:</span>
                 <span class="n">row</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="s2">&quot;Ticker&quot;</span><span class="p">:</span><span class="n">t</span><span class="p">,</span> <span class="s2">&quot;Date&quot;</span><span class="p">:</span><span class="n">d</span><span class="p">,</span> <span class="s2">&quot;Score&quot;</span><span class="p">:</span><span class="n">score</span><span class="p">,</span> <span class="s2">&quot;Return&quot;</span><span class="p">:</span><span class="n">response</span><span class="p">})</span>
                 <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
         <span class="n">SPY_row</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">({</span><span class="s2">&quot;Date&quot;</span><span class="p">:</span><span class="n">d</span><span class="p">,</span> <span class="s2">&quot;Return&quot;</span><span class="p">:</span><span class="n">forward_return</span><span class="p">(</span><span class="s2">&quot;SPY&quot;</span><span class="p">,</span> <span class="n">d</span><span class="p">,</span> <span class="n">lookforward</span><span class="p">,</span> <span class="n">SPY_data</span><span class="p">)})</span>
         <span class="n">SPY</span> <span class="o">=</span> <span class="n">SPY</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">SPY_row</span><span class="p">,</span> <span class="n">ignore_index</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        
     <span class="k">return</span> <span class="p">[</span><span class="n">df</span><span class="p">,</span> <span class="n">SPY</span><span class="p">];</span>
 </pre></div>
 
@@ -11941,16 +11985,24 @@ Then, we can use different CSVs to examine different universes. Pandas is great 
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[7]:</div>
+<div class="prompt input_prompt">In&nbsp;[6]:</div>
 <div class="inner_cell">
     <div class="input_area">
 <div class=" highlight hl-ipython3"><pre><span></span><span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="k">import</span> <span class="n">ttest_ind</span>
 <span class="n">SPY_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;SPY Data.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">parse_dates</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
 <span class="k">def</span> <span class="nf">check_significance</span><span class="p">(</span><span class="n">df_list</span><span class="p">,</span> <span class="n">bucket_size</span><span class="p">):</span>
+    
+    <span class="c1"># recall df_list[0] are the calculations, df_list[1] are the SPY numbers to benchmark too</span>
     <span class="n">scores_df</span> <span class="o">=</span> <span class="n">df_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    
+    <span class="c1"># sort df on momentum score</span>
     <span class="nb">sorted</span> <span class="o">=</span> <span class="n">scores_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;Score&quot;</span><span class="p">)</span>
+    
     <span class="n">best</span> <span class="o">=</span> <span class="nb">sorted</span><span class="o">.</span><span class="n">iloc</span><span class="p">[(</span><span class="nb">len</span><span class="p">(</span><span class="nb">sorted</span><span class="p">)</span> <span class="o">-</span> <span class="n">bucket_size</span><span class="p">):</span><span class="nb">len</span><span class="p">(</span><span class="nb">sorted</span><span class="p">)]</span>
     <span class="n">SPY_returns</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">df_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;Return&quot;</span><span class="p">],</span> <span class="n">bucket_size</span><span class="p">)</span>
+    
+    <span class="c1"># res is a t-test for the difference in means between two groups</span>
     <span class="n">res</span> <span class="o">=</span> <span class="n">ttest_ind</span><span class="p">(</span><span class="n">SPY_returns</span><span class="p">,</span> <span class="n">best</span><span class="p">[</span><span class="s2">&quot;Return&quot;</span><span class="p">])</span>
     <span class="k">return</span><span class="p">(</span><span class="n">res</span><span class="o">.</span><span class="n">pvalue</span><span class="p">)</span>
 </pre></div>
@@ -12358,23 +12410,157 @@ hmHUOaboDcMw6hxT9IZhGHWOKXrDMIw65/8D2DuXMnfAoNcAAAAASUVORK5CYII=
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h6 id="Strategy-Performance">Strategy Performance<a class="anchor-link" href="#Strategy-Performance">&#182;</a></h6><p>From our hypothesis testing, we've come to the conclusion that the one-year momentum score does contain information about differences in the next year's returns, at least for the best and worst 50 scorers. So, how would we build a strategy out of it?</p>
+<p>Aw, shucks. It looks like our definition of momentum had an edge during most of the 2000s, but hasn't had an edge since 2011. Some possible explanations for this degradation in significance are</p>
+<ul>
+<li>the proliferation of smart-beta ETFs and a crowded trade</li>
+<li>low rate environment &amp; availability of easy money buoying all prices up, not just the ones that should be</li>
+</ul>
+<p>For trading purposes, I would stop here, as there isn't a statisical justification for this strategy nowadays. However, there's one thing I'd like to check. If we backtest our strategy from 2003 to 2006, it should perform much better than if we backtest from 2013 to 2016. Let's write a backtest and check the performance statistics.</p>
+<h6 id="Strategy-Performance">Strategy Performance<a class="anchor-link" href="#Strategy-Performance">&#182;</a></h6><p>Following is the backtest function:</p>
 
 </div>
 </div>
 </div>
 <div class="cell border-box-sizing code_cell rendered">
 <div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
+<div class="prompt input_prompt">In&nbsp;[27]:</div>
 <div class="inner_cell">
     <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
+<div class=" highlight hl-ipython3"><pre><span></span><span class="kn">import</span> <span class="nn">datetime</span> <span class="k">as</span> <span class="nn">dt</span>
+<span class="k">def</span> <span class="nf">backtest</span><span class="p">(</span><span class="n">date0</span><span class="p">,</span> <span class="n">date1</span><span class="p">,</span> <span class="n">prices</span> <span class="o">=</span> <span class="n">price_data</span><span class="p">,</span> <span class="n">lb</span><span class="o">=</span><span class="mi">753</span><span class="p">,</span> <span class="n">lf</span><span class="o">=</span><span class="mi">253</span><span class="p">,</span> <span class="n">buckets</span><span class="o">=</span><span class="mi">250</span><span class="p">):</span>
+    <span class="n">all_dates</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">date0</span><span class="p">,</span> <span class="n">date1</span><span class="p">)</span>
+    <span class="n">included_dates</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">returns</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1"># for date in all_dates:</span>
+    <span class="k">for</span> <span class="n">ddd</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">all_dates</span><span class="p">),</span> <span class="mi">21</span><span class="p">):</span>
+        <span class="n">date_ret</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="n">all_dates</span><span class="p">[</span><span class="n">ddd</span><span class="p">]</span> <span class="ow">in</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+            
+            <span class="c1"># print(date)</span>
+            <span class="c1"># create a list of relevant dates for this specific date</span>
+            <span class="n">date</span><span class="o">=</span><span class="n">all_dates</span><span class="p">[</span><span class="n">ddd</span><span class="p">]</span>
+
+            <span class="n">date_index</span> <span class="o">=</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+            
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">((</span><span class="n">date_index</span><span class="o">-</span><span class="n">lf</span><span class="p">),</span> <span class="n">date_index</span><span class="p">,</span> <span class="mi">125</span><span class="p">):</span>
+                
+                <span class="n">sub_ret</span> <span class="o">=</span> <span class="mi">0</span>
+                
+                <span class="c1"># this if makes sure the first few periods of backtest don&#39;t</span>
+                <span class="c1"># rely on data outside the range you are testing on</span>
+                <span class="k">if</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">in</span> <span class="n">all_dates</span><span class="p">:</span>
+                    
+                    <span class="c1"># use prev function to do all the scoring</span>
+                    <span class="n">x</span> <span class="o">=</span> <span class="n">hypothesis_testing_dataframe</span><span class="p">(</span><span class="n">lb</span><span class="p">,</span> <span class="n">lf</span><span class="p">,</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                    
+                    <span class="c1"># get list of winners</span>
+                    <span class="n">scores_df</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="nb">sorted</span> <span class="o">=</span> <span class="n">scores_df</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s2">&quot;Score&quot;</span><span class="p">)</span>
+                    <span class="n">best</span> <span class="o">=</span> <span class="nb">sorted</span><span class="o">.</span><span class="n">iloc</span><span class="p">[(</span><span class="nb">len</span><span class="p">(</span><span class="nb">sorted</span><span class="p">)</span> <span class="o">-</span> <span class="n">buckets</span><span class="p">):</span><span class="nb">len</span><span class="p">(</span><span class="nb">sorted</span><span class="p">)]</span>
+                    <span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">best</span><span class="p">[</span><span class="s2">&quot;Ticker&quot;</span><span class="p">]:</span>
+                        <span class="n">r</span> <span class="o">=</span> <span class="p">(</span><span class="n">forward_return</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="p">(</span><span class="n">date_index</span><span class="o">-</span><span class="n">i</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">buckets</span>
+                        <span class="n">sub_ret</span> <span class="o">+=</span> <span class="n">r</span>
+
+                <span class="c1"># use sub_ret / lf if trading every day</span>
+                <span class="c1"># date_ret += sub_ret / lf</span>
+                
+                <span class="c1"># use sub_ret / 2 if trading every 6 months, per jupyter notebook example</span>
+                <span class="n">date_ret</span> <span class="o">+=</span> <span class="n">sub_ret</span> <span class="o">/</span> <span class="mi">2</span>
+                
+            <span class="n">included_dates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+            <span class="n">returns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">date_ret</span><span class="p">)</span>
+            
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;Date&quot;</span><span class="p">:</span><span class="n">included_dates</span><span class="p">,</span> <span class="s2">&quot;Return&quot;</span><span class="p">:</span><span class="n">returns</span><span class="p">})</span>
+
+<span class="n">d0</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2003</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">d1</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2006</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">results_2000s</span> <span class="o">=</span> <span class="n">backtest</span><span class="p">(</span><span class="n">d0</span><span class="p">,</span> <span class="n">d1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;finished 2000s&quot;</span><span class="p">)</span>
+
+<span class="n">d0</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2013</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">d1</span> <span class="o">=</span> <span class="n">dt</span><span class="o">.</span><span class="n">date</span><span class="p">(</span><span class="mi">2016</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">results_2010s</span> <span class="o">=</span> <span class="n">backtest</span><span class="p">(</span><span class="n">d0</span><span class="p">,</span> <span class="n">d1</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;finished 2010s&quot;</span><span class="p">)</span>
 </pre></div>
 
 </div>
 </div>
 </div>
 
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+<div class="prompt"></div>
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>finished 2000s
+finished 2010s
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>Then, let's compare the performance:</p>
+
+</div>
+</div>
+</div>
+<div class="cell border-box-sizing code_cell rendered">
+<div class="input">
+<div class="prompt input_prompt">In&nbsp;[31]:</div>
+<div class="inner_cell">
+    <div class="input_area">
+<div class=" highlight hl-ipython3"><pre><span></span><span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sharpe in 2000s:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">results_2000s</span><span class="p">[</span><span class="s2">&quot;Return&quot;</span><span class="p">])</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">results_2000s</span><span class="p">[</span><span class="s2">&quot;Return&quot;</span><span class="p">]))</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Sharpe in 2010s:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">results_2010s</span><span class="p">[</span><span class="s2">&quot;Return&quot;</span><span class="p">])</span><span class="o">/</span><span class="n">np</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">results_2010s</span><span class="p">[</span><span class="s2">&quot;Return&quot;</span><span class="p">]))</span>
+</pre></div>
+
+</div>
+</div>
+</div>
+
+<div class="output_wrapper">
+<div class="output">
+
+
+<div class="output_area">
+<div class="prompt"></div>
+
+<div class="output_subarea output_stream output_stdout output_text">
+<pre>Sharpe in 2000s:
+1.7374601138904058
+
+Sharpe in 2010s:
+1.3584234728393303
+</pre>
+</div>
+</div>
+
+</div>
+</div>
+
+</div>
+<div class="cell border-box-sizing text_cell rendered">
+<div class="prompt input_prompt">
+</div>
+<div class="inner_cell">
+<div class="text_cell_render border-box-sizing rendered_html">
+<p>So, we've confirmed our hypothesis that the performance of the strategy degrades over time. While we didn't get a tradable strategy from this research, we did at least confirm our statistical results with the backtest - and now we have all this code to use going forward. :)</p>
+
+</div>
+</div>
 </div>
     </div>
   </div>
