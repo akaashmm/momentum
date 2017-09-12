@@ -11778,6 +11778,28 @@ div#notebook {
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
+<h1 id="Momentum">Momentum<a class="anchor-link" href="#Momentum">&#182;</a></h1><p>"Momentum" is a phenomenon oberved across a diverse range of assets, where the assets that previously went up in price will continue to do so. It is an extremely broad idea as well - implementations can take various forms, a few examples of which are given below:</p>
+<ul>
+<li>trend trading on a single name</li>
+<li>momentum as one factor within a bigger factor model</li>
+<li>cross-sectional trading using momentum to rank</li>
+</ul>
+<p>Let's say we want to determine if the concept of momentum can give us a statistically-justified trading strategy. There are a few of steps that we have to do, to go from the broad abstract concept of "momentum" to a usable strategy:</p>
+<ol>
+<li>pick a universe to trade on</li>
+<li>pick a type of trade<ol>
+<li>time series vs. cross-sectional</li>
+</ol>
+</li>
+<li>determine how we measure momentum<ol>
+<li>define the timeframe</li>
+</ol>
+</li>
+<li>get the data</li>
+<li>check if <em>our definition</em> of momentum (determined in step 1) has a statistical edge </li>
+<li>if yes to 5, then write a backtest, check risk stats, and correlate to our other strategies</li>
+</ol>
+<p>Let's begin. I'll use a universe of the S&amp;P over the past 20y, for ease of data collection.</p>
 <h6 id="Getting-Data">Getting Data<a class="anchor-link" href="#Getting-Data">&#182;</a></h6><p>I want to create a specific data format for this project: a CSV file with dates as rows and tickers as columns, with the corresponding prices as the values.<br>
 Then, we can use different CSVs to examine different universes. Pandas is great as it handles all the NAs for us, so we don't have to build any missing-value handlers.</p>
 
@@ -11813,7 +11835,8 @@ Then, we can use different CSVs to examine different universes. Pandas is great 
 <li>forward returns function  </li>
 </ul>
 <p>Then, we can regress future returns on past momentum and see if momentum has any predictive power.</p>
-<p>My choice of a metric to measure momentum involves another regression. Here, I regress the stock's returns on a fake "perfect momentum" stream of returns (a bunch of 1% gains) and check the R^2. If the R^2 is .9, for example, then the stock's returns are 90% explained by a constant 1% gain every day.</p>
+<p>In the prevailing literature on momentum, the academics use an annoyingly simple measure of momentum - the return over the past 12m. Here, I try to use a different measure, which accounts for volatility (smoothness) of the return series as well.</p>
+<p>My choice of a metric to measure momentum involves another regression. Here, I regress the stock's returns on a fake "perfect momentum" stream of returns (a bunch of 1% gains) and check the R^2. If the R^2 is .9, for example, then the stock's returns are 90% explained by a constant 1% gain every day. In addition, the actual value of 1% doesn't matter here - in our definition, "perfect momentum" should be a <em>constant</em> positive return (e.g. you can lever up whatever</p>
 <p>We can sort all the stocks on this momentum score, because the highest R^2 values indicate the stocks who differ the least from our "perfect momentum stock".</p>
 
 </div>
@@ -11933,7 +11956,7 @@ Then, we can use different CSVs to examine different universes. Pandas is great 
 <p>We should also write a function which can evaluate the dataframes created by <code>hypothesis_testing_dataframe</code> and tell us whether we have a significant-enough relationship to proceed with strategy building. The particular test I use is a simple Welch's t-test for the difference in the means of two groups.</p>
 <p>The logic is that we'd want to see if the top scorers have a different mean return from the S&amp;P as a whole. I will use a size of 250 stocks for the top-scoring group (i.e. the best half of S&amp;P stocks). Then, we can compare those 250 stocks to a bucket of 250 shares of SPY. If our 250 stocks have a significantly greater mean forward return than SPY, then we have a strategy!</p>
 <p>One useful fact here for our implementation is the denominator of the t-test. The formula to get the t-statistic is as follows:
-<img src="https://akaashmm.github.com/momentum/t_test.png" alt="&quot;&quot;"></p>
+<img src="https://akaashmm.github.io/t_test.png" alt="&quot;&quot;"></p>
 <p>In the denominator, notice that the sample standard deviation used to standardize is simply the <em>average</em> of the two groups' standard deviations. If we have 250 shares of SPY in one of our groups, then that group's <em>s</em> will be zero and the denominator will be the <em>SE</em> of the group with the 250 momentum stocks. This means that we can, in fact, use 250 shares of SPY as the comparison in the t-test; the fact that it will be 250 of the same return only affects the results as far as the t-statistic's standard error will be approximately half of what it should be, and implementing this is quite easy given SPY returns. So the trade-off for using a t-test here is that we should look for about twice the significance.</p>
 
 </div>
@@ -12358,23 +12381,12 @@ hmHUOaboDcMw6hxT9IZhGHWOKXrDMIw65/8D2DuXMnfAoNcAAAAASUVORK5CYII=
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<h6 id="Strategy-Performance">Strategy Performance<a class="anchor-link" href="#Strategy-Performance">&#182;</a></h6><p>From our hypothesis testing, we've come to the conclusion that the one-year momentum score does contain information about differences in the next year's returns, at least for the best and worst 50 scorers. So, how would we build a strategy out of it?</p>
+<p>Aw, shucks. It looks like our definition of momentum had an edge during most of the 2000s, but hasn't had an edge since 2011. For trading purposes, I would stop here, as there isn't a statisical justification for this strategy.</p>
+<p>However, there's one thing I'd like to check. If we backtest our strategy from 2003 to 2006, it should perform much better than if we backtest from 2013 to 2016. Let's write a backtest and check the performance statistics.</p>
+<h6 id="Strategy-Performance">Strategy Performance<a class="anchor-link" href="#Strategy-Performance">&#182;</a></h6><p>** I'm not done yet....... will update this tomorrow</p>
 
 </div>
 </div>
-</div>
-<div class="cell border-box-sizing code_cell rendered">
-<div class="input">
-<div class="prompt input_prompt">In&nbsp;[&nbsp;]:</div>
-<div class="inner_cell">
-    <div class="input_area">
-<div class=" highlight hl-ipython3"><pre><span></span> 
-</pre></div>
-
-</div>
-</div>
-</div>
-
 </div>
     </div>
   </div>
