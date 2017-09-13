@@ -11844,7 +11844,7 @@ Then, we can use different CSVs to examine different universes. Pandas is great 
 <p>In the prevailing literature on momentum, the academics use an annoyingly simple measure of momentum - the return over the past 12m. Here, I try to use a different measure, which accounts for volatility (smoothness) of the return series as well.</p>
 <p>My choice of a metric to measure momentum involves another regression. Here, I regress the stock's returns on a fake "perfect momentum" stream of returns (a bunch of 1% gains) and check the R^2. If the R^2 is .9, for example, then the stock's returns are 90% explained by a constant 1% gain every day. In addition, the actual value of 1% doesn't matter here - in our definition, "perfect momentum" should only be a <em>constant</em> positive return.</p>
 <p>Here's what I mean by "perfect":
-<img src="https://akaashmm.github.io/momentum/perfect.png" alt="&quot;&quot;"></p>
+<img src="https://akaashmm.github.io/momentum/perfect.PNG" alt="&quot;&quot;"></p>
 <p>Even though Arrowhead stock is rallying pretty hard and would be considered very-high-momentum (I found it by screening for the highest-returning stocks), it's definitely not perfect from a momentum perspective.</p>
 <p>We can sort all the stocks on our momentum score, because the highest R^2 values indicate the stocks who differ the least from our "perfect momentum stock".</p>
 
@@ -11929,7 +11929,7 @@ Name: 58, dtype: object
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
 <p>So the highest scorer is ALL and the 50th-highest is GLW. Let's confirm that they look like momentum stocks, and that ALL looks a little better than GLW:
-<img src="https://akaashmm.github.io/momentum/compare.png" alt="&quot;&quot;"></p>
+<img src="https://akaashmm.github.io/momentum/compare.PNG" alt="&quot;&quot;"></p>
 
 </div>
 </div>
