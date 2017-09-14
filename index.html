@@ -11787,7 +11787,7 @@ div#notebook {
 <li>cross-sectional trading using momentum to rank</li>
 </ul>
 <p>Momentum is already a popular strategy - here's how a momentum ETF (MTUM) outperforms SPY over 5 years (2012-2017):
-<img src="https://akaashmm.github.io/momentum/etf.PNG" alt="&quot;&quot;">
+<img src="https://akaashmm.github.io/momentum/etf.png" alt="&quot;&quot;">
 <img src="https://akaashmm.github.io/momentum/mtum.png" alt="&quot;&quot;"></p>
 <p>Clearly we should check it out and try to come up with our own version. There are a few of steps that we have to do, to go from the broad abstract concept of "momentum" to a usable strategy:</p>
 <ol>
@@ -11845,7 +11845,7 @@ Then, we can use different CSVs to examine different universes. Pandas is great 
 <p>In the prevailing literature on momentum, the academics use an annoyingly simple measure of momentum - the return over the past 12m. Here, I try to use a different measure, which accounts for volatility (smoothness) of the return series as well.</p>
 <p>My choice of a metric to measure momentum involves another regression. Here, I regress the stock's returns on a fake "perfect momentum" stream of returns (a bunch of 1% gains) and check the R^2. If the R^2 is .9, for example, then the stock's returns are 90% explained by a constant 1% gain every day. In addition, the actual value of 1% doesn't matter here - in our definition, "perfect momentum" should only be a <em>constant</em> positive return.</p>
 <p>Here's what I mean by "perfect":
-<img src="https://akaashmm.github.io/momentum/perfect.PNG" alt="&quot;&quot;"></p>
+<img src="https://akaashmm.github.io/momentum/perfect.png" alt="&quot;&quot;"></p>
 <p>Even though Arrowhead stock is rallying pretty hard and would be considered very-high-momentum (I found it by screening for the highest-returning stocks), it's definitely not perfect from a momentum perspective.</p>
 <p>We can sort all the stocks on our momentum score, because the highest R^2 values indicate the stocks who differ the least from our "perfect momentum stock".</p>
 
