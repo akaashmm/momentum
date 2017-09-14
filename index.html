@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" />
-<title>Momentumwbactest</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
+<title>Momentum</title><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.10/require.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
 
 <style type="text/css">
@@ -11787,7 +11787,8 @@ div#notebook {
 <li>cross-sectional trading using momentum to rank</li>
 </ul>
 <p>Momentum is already a popular strategy - here's how a momentum ETF (MTUM) outperforms SPY over 5 years (2012-2017):
-<img src="https://akaashmm.github.io/momentum/etf.PNG" alt="&quot;&quot;"></p>
+<img src="https://akaashmm.github.io/momentum/etf.PNG" alt="&quot;&quot;">
+<img src="https://akaashmm.github.io/momentum/mtum.png" alt="&quot;&quot;"></p>
 <p>Clearly we should check it out and try to come up with our own version. There are a few of steps that we have to do, to go from the broad abstract concept of "momentum" to a usable strategy:</p>
 <ol>
 <li>pick a universe to trade on</li>
@@ -11800,7 +11801,7 @@ div#notebook {
 </ol>
 </li>
 <li>get the data</li>
-<li>check if <em>our definition</em> of momentum (determined in step 1) has a statistical edge </li>
+<li>check if <em>our definition</em> of momentum (determined in step 3) has a statistical edge </li>
 <li>if yes to 5, then write a backtest, check risk stats, and correlate to our other strategies</li>
 </ol>
 <p>Let's begin. I'll use a universe of the S&amp;P over the past 20y, for ease of data collection.</p>
@@ -11928,8 +11929,8 @@ Name: 58, dtype: object
 </div>
 <div class="inner_cell">
 <div class="text_cell_render border-box-sizing rendered_html">
-<p>So the highest scorer is ALL and the 50th-highest is GLW. Let's confirm that they look like momentum stocks, and that ALL looks a little better than GLW:
-<img src="https://akaashmm.github.io/momentum/compare.PNG" alt="&quot;&quot;"></p>
+<p>So the 5th-highest scorer is ALL (Allstate) and the 50th-highest is GLW (Corning). Let's confirm that they look like momentum stocks, and that ALL looks a little better than GLW:
+<img src="https://akaashmm.github.io/momentum/compare.png" alt="&quot;&quot;"></p>
 
 </div>
 </div>
@@ -12134,7 +12135,7 @@ Name: 58, dtype: object
         <span class="n">p_val</span> <span class="o">=</span> <span class="n">check_significance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="mi">30</span><span class="p">)</span>
         <span class="n">included_dates</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
         <span class="n">t_stats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p_val</span><span class="p">)</span>
-<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;done&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;done&quot;</span><span class="p">)</span> <span class="c1"># because it takes a while to run completely</span>
 </pre></div>
 
 </div>
